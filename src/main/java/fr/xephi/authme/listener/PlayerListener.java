@@ -90,7 +90,7 @@ public class PlayerListener implements Listener {
 
     private boolean isAsyncPlayerPreLoginEventCalled = false;
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
         String cmd = event.getMessage().split(" ")[0].toLowerCase();
         if (settings.getProperty(HooksSettings.USE_ESSENTIALS_MOTD) && "/motd".equals(cmd)) {
@@ -353,22 +353,22 @@ public class PlayerListener implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerInventoryOpen(InventoryOpenEvent event) {
-        final HumanEntity player = event.getPlayer();
+//    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
+//    public void onPlayerInventoryOpen(InventoryOpenEvent event) {
+//        final HumanEntity player = event.getPlayer();
+//
+//        if (listenerService.shouldCancelEvent(player)) {
+//            event.setCancelled(true);
+//
+//            /*
+//             * @note little hack cause InventoryOpenEvent cannot be cancelled for
+//             * real, cause no packet is sent to server by client for the main inv
+//             */
+//            bukkitService.scheduleSyncDelayedTask(player::closeInventory, 1);
+//        }
+//    }
 
-        if (listenerService.shouldCancelEvent(player)) {
-            event.setCancelled(true);
-
-            /*
-             * @note little hack cause InventoryOpenEvent cannot be cancelled for
-             * real, cause no packet is sent to server by client for the main inv
-             */
-            bukkitService.scheduleSyncDelayedTask(player::closeInventory, 1);
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
     public void onPlayerInventoryClick(InventoryClickEvent event) {
         if (listenerService.shouldCancelEvent(event.getWhoClicked())) {
             event.setCancelled(true);

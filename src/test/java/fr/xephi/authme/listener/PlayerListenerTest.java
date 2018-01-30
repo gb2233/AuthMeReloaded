@@ -729,42 +729,42 @@ public class PlayerListenerTest {
         verify(event).setCancelled(true);
     }
 
-    @Test
-    public void shouldAllowInventoryOpen() {
-        // given
-        HumanEntity player = mock(Player.class);
-        InventoryView transaction = mock(InventoryView.class);
-        given(transaction.getPlayer()).willReturn(player);
-        InventoryOpenEvent event = new InventoryOpenEvent(transaction);
-        given(event.getPlayer()).willReturn(player);
-        given(listenerService.shouldCancelEvent(player)).willReturn(false);
-
-        // when
-        listener.onPlayerInventoryOpen(event);
-
-        // then
-        assertThat(event.isCancelled(), equalTo(false));
-        verifyZeroInteractions(bukkitService);
-    }
-
-    @Test
-    public void shouldCancelInventoryOpen() {
-        // given
-        HumanEntity player = mock(Player.class);
-        InventoryView transaction = mock(InventoryView.class);
-        given(transaction.getPlayer()).willReturn(player);
-        InventoryOpenEvent event = new InventoryOpenEvent(transaction);
-        given(event.getPlayer()).willReturn(player);
-        given(listenerService.shouldCancelEvent(player)).willReturn(true);
-        setBukkitServiceToScheduleSyncDelayedTaskWithDelay(bukkitService);
-
-        // when
-        listener.onPlayerInventoryOpen(event);
-
-        // then
-        assertThat(event.isCancelled(), equalTo(true));
-        verify(player).closeInventory();
-    }
+//    @Test
+//    public void shouldAllowInventoryOpen() {
+//        // given
+//        HumanEntity player = mock(Player.class);
+//        InventoryView transaction = mock(InventoryView.class);
+//        given(transaction.getPlayer()).willReturn(player);
+//        InventoryOpenEvent event = new InventoryOpenEvent(transaction);
+//        given(event.getPlayer()).willReturn(player);
+//        given(listenerService.shouldCancelEvent(player)).willReturn(false);
+//
+//        // when
+//        listener.onPlayerInventoryOpen(event);
+//
+//        // then
+//        assertThat(event.isCancelled(), equalTo(false));
+//        verifyZeroInteractions(bukkitService);
+//    }
+//
+//    @Test
+//    public void shouldCancelInventoryOpen() {
+//        // given
+//        HumanEntity player = mock(Player.class);
+//        InventoryView transaction = mock(InventoryView.class);
+//        given(transaction.getPlayer()).willReturn(player);
+//        InventoryOpenEvent event = new InventoryOpenEvent(transaction);
+//        given(event.getPlayer()).willReturn(player);
+//        given(listenerService.shouldCancelEvent(player)).willReturn(true);
+//        setBukkitServiceToScheduleSyncDelayedTaskWithDelay(bukkitService);
+//
+//        // when
+//        listener.onPlayerInventoryOpen(event);
+//
+//        // then
+//        assertThat(event.isCancelled(), equalTo(true));
+//        verify(player).closeInventory();
+//    }
 
     @Test
     public void shouldNotModifyJoinMessage() {
