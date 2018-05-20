@@ -1,10 +1,13 @@
 package fr.xephi.authme.listener;
 
+import fr.xephi.authme.ConsoleLogger;
+import fr.xephi.authme.data.QuickCommandsProtectionManager;
 import fr.xephi.authme.data.auth.PlayerAuth;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.message.MessageKey;
 import fr.xephi.authme.message.Messages;
 import fr.xephi.authme.permission.PermissionsManager;
+import fr.xephi.authme.permission.handlers.PermissionLoadUserException;
 import fr.xephi.authme.process.Management;
 import fr.xephi.authme.service.AntiBotService;
 import fr.xephi.authme.service.BukkitService;
@@ -86,6 +89,8 @@ public class PlayerListener implements Listener {
     @Inject
     private PermissionsManager permissionsManager;
     @Inject
+    private QuickCommandsProtectionManager quickCommandsProtectionManager;
+    @Inject
     private BungeeSender bungeeSender;
 
     private boolean isAsyncPlayerPreLoginEventCalled = false;
@@ -100,6 +105,11 @@ public class PlayerListener implements Listener {
             return;
         }
         final Player player = event.getPlayer();
+        if (!quickCommandsProtectionManager.isAllowed(player.getName())) {
+            event.setCancelled(true);
+            player.kickPlayer(m.retrieveSingle(player, MessageKey.QUICK_COMMAND_PROTECTION_KICK));
+            return;
+        }
         if (listenerService.shouldCancelEvent(player)) {
             event.setCancelled(true);
             m.send(player, MessageKey.DENIED_COMMAND);
@@ -178,6 +188,7 @@ public class PlayerListener implements Listener {
 
         String customJoinMessage = settings.getProperty(RegistrationSettings.CUSTOM_JOIN_MESSAGE);
         if (!customJoinMessage.isEmpty()) {
+            customJoinMessage = ChatColor.translateAlternateColorCodes('&', customJoinMessage);
             event.setJoinMessage(customJoinMessage
                 .replace("{PLAYERNAME}", player.getName())
                 .replace("{DISPLAYNAME}", player.getDisplayName())
@@ -206,6 +217,9 @@ public class PlayerListener implements Listener {
         if (!PlayerListener19Spigot.isPlayerSpawnLocationEventCalled()) {
             teleportationService.teleportOnJoin(player);
         }
+
+        quickCommandsProtectionManager.processJoin(player);
+
         management.performJoin(player);
 
         teleportationService.teleportNewPlayerToFirstSpawn(player);
@@ -248,15 +262,19 @@ public class PlayerListener implements Listener {
 
         // Keep pre-UUID compatibility
         try {
-            permissionsManager.loadUserData(event.getUniqueId());
-        } catch (NoSuchMethodError e) {
-            permissionsManager.loadUserData(name);
+            try {
+                permissionsManager.loadUserData(event.getUniqueId());
+            } catch (NoSuchMethodError e) {
+                permissionsManager.loadUserData(name);
+            }
+        } catch (PermissionLoadUserException e) {
+            ConsoleLogger.logException("Unable to load the permission data of user " + name, e);
         }
 
         try {
             runOnJoinChecks(JoiningPlayer.fromName(name), event.getAddress().getHostAddress());
         } catch (FailedVerificationException e) {
-            event.setKickMessage(m.retrieveSingle(e.getReason(), e.getArgs()));
+            event.setKickMessage(m.retrieveSingle(name, e.getReason(), e.getArgs()));
             event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
         }
     }
@@ -284,7 +302,7 @@ public class PlayerListener implements Listener {
             try {
                 runOnJoinChecks(JoiningPlayer.fromPlayerObject(player), event.getAddress().getHostAddress());
             } catch (FailedVerificationException e) {
-                event.setKickMessage(m.retrieveSingle(e.getReason(), e.getArgs()));
+                event.setKickMessage(m.retrieveSingle(player, e.getReason(), e.getArgs()));
                 event.setResult(PlayerLoginEvent.Result.KICK_OTHER);
             }
         }

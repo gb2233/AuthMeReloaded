@@ -6,6 +6,8 @@ import fr.xephi.authme.data.TempbanManager;
 import fr.xephi.authme.data.auth.PlayerAuth;
 import fr.xephi.authme.data.auth.PlayerCache;
 import fr.xephi.authme.data.captcha.LoginCaptchaManager;
+import fr.xephi.authme.data.limbo.LimboMessageType;
+import fr.xephi.authme.data.limbo.LimboPlayerState;
 import fr.xephi.authme.data.limbo.LimboService;
 import fr.xephi.authme.datasource.DataSource;
 import fr.xephi.authme.events.AuthMeAsyncPreLoginEvent;
@@ -90,7 +92,13 @@ public class AsynchronousLogin implements AsynchronousProcess {
     public void login(Player player, String password) {
         PlayerAuth auth = getPlayerAuth(player);
         if (auth != null && checkPlayerInfo(player, auth, password)) {
-            performLogin(player, auth);
+            if (auth.getTotpKey() != null) {
+                limboService.resetMessageTask(player, LimboMessageType.TOTP_CODE);
+                limboService.getLimboPlayer(player.getName()).setState(LimboPlayerState.TOTP_REQUIRED);
+                // TODO #1141: Check if we should check limbo state before processing password
+            } else {
+                performLogin(player, auth);
+            }
         }
     }
 
@@ -125,7 +133,7 @@ public class AsynchronousLogin implements AsynchronousProcess {
         if (auth == null) {
             service.send(player, MessageKey.UNKNOWN_USER);
             // Recreate the message task to immediately send the message again as response
-            limboService.resetMessageTask(player, false);
+            limboService.resetMessageTask(player, LimboMessageType.REGISTER);
             return null;
         }
 
@@ -197,7 +205,7 @@ public class AsynchronousLogin implements AsynchronousProcess {
             tempbanManager.tempbanPlayer(player);
         } else if (service.getProperty(RestrictionSettings.KICK_ON_WRONG_PASSWORD)) {
             bukkitService.scheduleSyncTaskFromOptionallyAsyncTask(
-                () -> player.kickPlayer(service.retrieveSingleMessage(MessageKey.WRONG_PASSWORD)));
+                () -> player.kickPlayer(service.retrieveSingleMessage(player, MessageKey.WRONG_PASSWORD)));
         } else {
             service.send(player, MessageKey.WRONG_PASSWORD);
 
@@ -218,7 +226,7 @@ public class AsynchronousLogin implements AsynchronousProcess {
      * @param player the player to log in
      * @param auth the associated PlayerAuth object
      */
-    private void performLogin(Player player, PlayerAuth auth) {
+    public void performLogin(Player player, PlayerAuth auth) {
         if (player.isOnline()) {
             final boolean isFirstLogin = (auth.getLastLogin() == null);
 
